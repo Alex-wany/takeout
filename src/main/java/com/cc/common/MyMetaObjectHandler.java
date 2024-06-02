@@ -2,8 +2,10 @@ package com.cc.common;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import com.cc.utils.BaseContext;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
@@ -15,11 +17,15 @@ import java.time.LocalDateTime;
  * 为加入@TableField的注解提供自动填充的功能
  */
 @Component
+@Slf4j
 public class MyMetaObjectHandler implements MetaObjectHandler {
 
     /*退而求其次选择了注入Request对象*/
     @Autowired
     HttpServletRequest httpServletRequest;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * @param metaObject 插入时自动填充
@@ -27,15 +33,18 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {
 
+        log.info("start insert fill ....");
+
         //填充创建时间
         metaObject.setValue("createTime", LocalDateTime.now());
         //填充 更新的时间
         metaObject.setValue("updateTime", LocalDateTime.now());
         //BaseContext工具类获取当前登陆人员信息
-       //填充创建人信息
-        metaObject.setValue("createUser", httpServletRequest.getSession().getAttribute("employee"));
-        //填充更新人信息
-        metaObject.setValue("updateUser", httpServletRequest.getSession().getAttribute("employee"));
+       //填充创建人信息 从Redis中获取
+        metaObject.setValue("createUser", redisTemplate.opsForValue().get("employee"));
+        //填充更新人信息 从 BaseContext中获取 获取不到 bug 通过HttpServletRequest获取
+//        metaObject.setValue("updateUser", httpServletRequest.getAttribute("employee"));
+        metaObject.setValue("updateUser", redisTemplate.opsForValue().get("employee"));
         /*
         这里有Bug，就是封装好的BaseContext通过ThreadLocal获取不了对象，虽然都是一个线程的
         但就是获取不到，所以这里先写死了，后面慢慢再改吧
@@ -52,6 +61,8 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
      */
     @Override
     public void updateFill(MetaObject metaObject) {
+
+        log.info("start update fill ....");
         //因为是更新，所以不用操作创建时间
         //更新 更新的时间
         metaObject.setValue("updateTime", LocalDateTime.now());
@@ -61,6 +72,6 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
         metaObject.setValue("updateUser", 1L);
         * */
 
-        metaObject.setValue("updateUser", httpServletRequest.getSession().getAttribute("employee"));
+        metaObject.setValue("updateUser", BaseContext.getCurrentId());
     }
 }

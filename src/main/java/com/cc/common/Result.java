@@ -19,7 +19,7 @@ public class Result<T> implements Serializable {
 
     private T data; //数据
 
-    private Map map = new HashMap(); //动态数据
+    private Map map = new HashMap(); //动态数据 用于存放一些动态的数据 如token
 
     public static <T> Result<T> success(T object) {
         Result<T> r = new Result<T>();

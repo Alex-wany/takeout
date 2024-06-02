@@ -10,6 +10,7 @@ import com.cc.utils.BaseContext;
 import com.cc.utils.MD5Util;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,6 +35,9 @@ public class EmployeeController {
     @Autowired
     private EmployeeService employeeService;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+
     /**
      * @param request 如果登陆成功把对象放入Session中，方便后续拿取
      * @param employee 利用@RequestBody注解来解析前端传来的Json，同时用对象来封装
@@ -51,7 +55,7 @@ public class EmployeeController {
         LambdaQueryWrapper<Employee> lambdaQueryWrapper = new LambdaQueryWrapper();
         lambdaQueryWrapper.eq(Employee::getUsername, username);
         Employee empResult=employeeService.getOne(lambdaQueryWrapper);
-            //判断用户是否存在
+        //判断用户是否存在
         if (!empResult.getUsername().equals(username)){
             return Result.error("账户不存在");
             //密码是否正确
@@ -63,12 +67,15 @@ public class EmployeeController {
             //状态正常允许登陆
         }else {
             log.info("登陆成功，账户存入session");
-            //员工id存入session，
+            //员工id存入session 用于后续的登陆验证
             request.getSession().setAttribute("employee",empResult.getId());
+            //员工id存入redis 用于后续的登陆验证
+            redisTemplate.opsForValue().set("employee", empResult.getId());
             //引入BaseContext的工具类，将存入session的员工信息拿出来，保存到ThreadLocal下，方便拿不到Request的类获取用户Id
             BaseContext.setCurrentId(empResult.getId());
             //把员工对象存入localStorage作用域
             return Result.success(employee);
+
         }
     }
 
@@ -96,20 +103,23 @@ public class EmployeeController {
      */
     @PostMapping("")
     public Result addEmployee(HttpServletRequest httpServletRequest,@RequestBody Employee employee) {
-        //设置默认密码，顺手加密了
+
+        log.info("新增"+Thread.currentThread().getName());
+
+        //设置默认密码为 123456 并使用MD5加密
         employee.setPassword(MD5Util.getMD5("123456"));
         //设置修改时间
-        employee.setCreateTime(LocalDateTime.now());
-        employee.setUpdateTime(LocalDateTime.now());
+//        employee.setCreateTime(LocalDateTime.now());
+//        employee.setUpdateTime(LocalDateTime.now());
         //账户默认状态0
         employee.setStatus(0);
         //获取当前新增操作人员的id
-        Long empId= (Long) httpServletRequest.getSession().getAttribute("employee");
-        employee.setCreateUser(empId);
-        employee.setUpdateUser(empId);
+//        Long empId= (Long) httpServletRequest.getSession().getAttribute("employee");
+//        employee.setCreateUser(empId);
+//        employee.setUpdateUser(empId);
         //MP自动CRUD的功能，封装好了save方法
         employeeService.save(employee);
-        return Result.success("插入成功");
+        return Result.success("新增员工成功");
     }
 
     /**
@@ -129,7 +139,7 @@ public class EmployeeController {
         lambdaQueryWrapper.like(!StringUtils.isEmpty(name), Employee::getName, name);
         //添加排序
         lambdaQueryWrapper.orderByDesc(Employee::getCreateTime);
-        //查询分页、自动更新
+        //分页查询 传入分页构造器和查询构造器 返回分页对象 pageInfo
         employeeService.page(pageInfo, lambdaQueryWrapper);
         //返回查询结果
         return Result.success(pageInfo);
@@ -148,10 +158,10 @@ public class EmployeeController {
         Long empId = (Long) httpServletRequest.getSession().getAttribute("employee");
         //拿新的状态值
         employee.setStatus(employee.getStatus());
-        //更新时间
-        employee.setUpdateTime(LocalDateTime.now());
-        //更新处理人id
-        employee.setUpdateUser(empId);
+//        //更新时间
+//        employee.setUpdateTime(LocalDateTime.now());
+//        //更新处理人id
+//        employee.setUpdateUser(empId);
         employeeService.updateById(employee);
         return Result.success(employee);
     }

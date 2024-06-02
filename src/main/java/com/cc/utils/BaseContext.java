@@ -1,5 +1,8 @@
 package com.cc.utils;
 
+
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * 对ThreadLocal进行封装
  * 方便用户在没有办法拿request对象的地方拿request对象中的信息，比如用户id
@@ -7,17 +10,21 @@ package com.cc.utils;
  * 基于ThreadLocal 封装工具类，用户保存和获取当前登录的用户id
  * ThreadLocal以线程为 作用域，保存每个线程中的数据副本
  */
+@Slf4j
 public class BaseContext {
 
-    private static ThreadLocal<Long> threadLocal = new ThreadLocal<>();
+    private static final ThreadLocal<Long> threadLocal = new ThreadLocal<>();
 
     //  设置当前用户id
     public static void setCurrentId(Long id){
-        System.out.println("Base"+Thread.currentThread().getName());
+        log.info("设置当前用户id:{}",id);
         threadLocal.set(id);
+        log.info("设置当前用户id为:{}",threadLocal.get());
     }
 
     public static Long getCurrentId(){
+        log.info("获取当前用户id:{}",threadLocal.get());
         return threadLocal.get();
+
     }
 }

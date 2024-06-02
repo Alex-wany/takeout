@@ -24,7 +24,7 @@ public class LoginCheckFilter implements Filter {
     @Autowired
     private RedisTemplate redisTemplate;
 
-    //调用Spring核心包的字符串匹配类
+    //调用Spring核心包的字符串匹配工具 AntPathMatcher 来匹配路径 用于判断是否可以放行
     public static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
     @Override
@@ -37,7 +37,7 @@ public class LoginCheckFilter implements Filter {
         //定义可以放行的请求url
         String[] urls = {
             "/employee/login",
-            "/employee/login",
+            "/employee/logout",
             "/backend/**",
             "/front/**",
             "/user/sendMsg",
@@ -47,17 +47,18 @@ public class LoginCheckFilter implements Filter {
             "/swagger-resources",
             "/v2/api-docs"
         };
-        //判断这个路径是否直接放行
-        Boolean cheakUrl = checkUrl(urls, requestUrl);
+        //判断请求的url是否可以放行
+        boolean isMatch = checkUrl(urls, requestUrl);
         //不需要处理直接放行
-        if (cheakUrl){
+        if (isMatch){
             log.info("匹配到了{}",requestUrl);
+            //放行 交给下一个过滤器 或者是目标资源
             filterChain.doFilter(httpServletRequest, httpServletResponse);
             //放行完了直接结束就行
             return;
         }
-        //判断用户已经登陆可以放行（PC后台版）
 
+        //判断用户已经登陆可以放行（PC后台版） 通过redis判断是否登陆 通过redis的key来判断 有key就是登陆了
         if (redisTemplate.opsForValue().get("employee")!= null){
             log.info("后台用户已登录");
             filterChain.doFilter(httpServletRequest, httpServletResponse);
@@ -81,7 +82,7 @@ public class LoginCheckFilter implements Filter {
         //没有登陆，跳转到登陆页面
         //前端有拦截器完成跳转页面，所以我们用输入流写个json来触发前端的拦截器完成跳转
         httpServletResponse.getWriter().write(JSON.toJSONString(Result.error("NOTLOGIN")));
-        log.info("拦截，交由前端跳转");
+        log.info("拦截到当前用户未登录，交由前端跳转至登录界面");
         return;
     }
 
@@ -93,9 +94,10 @@ public class LoginCheckFilter implements Filter {
     public boolean checkUrl(String []urls,String requestUrl){
         Boolean matchUrlResult = true;
         //遍历的同时调用PATH_MATCHER来对路径进行匹配
-        for (String currUrl : urls) {
-            matchUrlResult=PATH_MATCHER.match(currUrl, requestUrl);
-            if (matchUrlResult){
+        for (String url : urls) {
+            //匹配路径 返回值是boolean类型 true就是匹配到了
+            boolean match=PATH_MATCHER.match(url, requestUrl);
+            if (match){
                 //匹配到了可以放行的路径，直接放行
                 return true;
             }

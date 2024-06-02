@@ -28,8 +28,9 @@ public class GloableExceptionHandler {
      */
     @ExceptionHandler({SQLIntegrityConstraintViolationException.class,NullPointerException.class})
     public Result<String> exceptionHandler(SQLIntegrityConstraintViolationException exception){
+        //打印异常信息
         log.error(exception.getMessage());
-        //这里判断出来是添加员工时出现的异常
+        //判断异常信息是否包含重复信息 Duplicate entry
         if (exception.getMessage().contains("Duplicate entry")){
             //exception对象分割，同时存储
             String []splitErrorMessage=exception.getMessage().split(" ");
@@ -41,7 +42,8 @@ public class GloableExceptionHandler {
             String errorMessage = "这个账号重复了" + splitErrorMessage[2];
             return Result.error(errorMessage);
         }
-        return Result.error("失败了");
+        //返回位置错误
+        return Result.error("未知错误");
     }
 
     /**
