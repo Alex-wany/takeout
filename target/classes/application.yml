@@ -65,4 +65,4 @@ mybatis-plus:
 
 #自定义的文件上传存储位置
 takeOutFile:
-  fileLocaltion: D:\JavaProject\takeOutUploadFile\
+  fileLocaltion: /Users/alex-wany/takeOutUploadFile/

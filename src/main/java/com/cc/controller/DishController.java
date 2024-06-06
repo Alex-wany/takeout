@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -61,7 +62,7 @@ public class DishController {
     public Result<String> addDish(@RequestBody DishDto dishDto) {
         log.info(dishDto.toString());
         dishService.addDishWithFlavor(dishDto);
-        return Result.success("保存成功");
+        return Result.success("保存菜品成功");
     }
 
 
@@ -92,7 +93,7 @@ public class DishController {
 
         //对象拷贝，忽略record对象，因为record就是查出来的记录数，也就是pageInfo
         BeanUtils.copyProperties(pageInfo,dishDtoPage,"records");
-
+        //获取查出来的记录
         List<Dish> records = pageInfo.getRecords();
         //将List集合搬入Dto中
         //这里是流式编程的内容，或者用foreach来进行搬运也可以解决
@@ -110,6 +111,7 @@ public class DishController {
             }
             return dishDto;
         }).collect(Collectors.toList());
+        //将查出来的记录放入pageInfo中
         dishDtoPage.setRecords(list);
 
         return Result.success(dishDtoPage);
@@ -121,9 +123,9 @@ public class DishController {
      * @param id 菜品id
      * @return
      */
-    @CachePut(value = "userCache",key="#dishDto.id")
+//    @CachePut(value = "userCache",key="#dishDto.id")//这个注解是用来更新缓存的 但是这里不需要 用了会报错 但是不影响
     @GetMapping("/{id}")
-    public Result<DishDto> updateDish(@PathVariable Long id){
+    public Result<DishDto> getDishWithFlavor(@PathVariable Long id){
         //因为是直接查Dto数据嘛，用现成的肯定不行了，在Service层自己写，这是个多表联查的过程
         DishDto dishDto=dishService.getByIdWithFlavor(id);
 
@@ -135,10 +137,29 @@ public class DishController {
      * @param dishDto
      * @return
      */
+    @Transactional
     @PutMapping()
     public Result<String> updateDish(@RequestBody DishDto dishDto) {
-        log.info(dishDto.toString());
+        //更新菜品
+        log.info("前端传来的 dto 对象：" + dishDto.toString());
+        //更新dish表
         dishService.updateDishWithFlavor(dishDto);
+
+        //清理当前菜品对应的口味数据 dish_flavor表的 delete 操作
+        LambdaQueryWrapper<DishFlavor> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(DishFlavor::getDishId, dishDto.getId());
+        //删除
+        dishFlavorService.remove(wrapper);
+        //重新添加当前提交过来的口味数据--dish_flavor表的 insert 操作
+        /*dishDto.getFlavors().forEach((item) -> {
+            item.setDishId(dishDto.getId());
+            dishFlavorService.save(item);
+        });*/
+        dishDto.getFlavors().stream().map((item) -> {
+            item.setDishId(dishDto.getId());
+            return item;
+        }).forEach(dishFlavorService::save);
+
 
         /*
         * 大面积全清理的写法
@@ -146,10 +167,10 @@ public class DishController {
         //Set keys = redisTemplate.keys("dish_*");
         //redisTemplate.delete(keys);
 
-        //精确删除，在售状态的
+        /*//精确删除，在售状态的
         String redisKey = "dish_" + dishDto.getCategoryId() + "_" + dishDto.getStatus()+"_1";
         log.info("准备清理key为:{} 的缓存数据",redisKey);
-        redisTemplate.delete(redisKey);
+        redisTemplate.delete(redisKey);*/
 
 
         return Result.success("更新成功");

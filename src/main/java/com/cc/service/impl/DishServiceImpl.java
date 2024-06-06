@@ -45,16 +45,32 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     public void addDishWithFlavor(DishDto dishDto) {
         //因为DishDto是包含了Dish的信息，所以可以先存Dish信息到Dish表中，DishDto扩展的数据可以下一步再存
         //为什么这里传dishDto可以，因为DishDto是Dish的子类
-        dishService.save(dishDto);
+//        dishService.save(dishDto);
+        this.save(dishDto);//this代表当前类，这里是DishServiceImpl 也就是ServiceImpl的子类
+        /*
+        * 上面两行代码的效果是一样的，都是用来保存DishDto对象到数据库中。
+        * dishService.save(dishDto);和this.save(dishDto);都是调用了ServiceImpl类的save方法。
+        * 这个方法的作用是将一个实体对象保存到数据库中。
+        * dishService是DishService接口的一个实例，它是在DishServiceImpl类中通过@Autowired注解自动注入的。
+        * DishService接口继承了IService接口，IService接口定义了一些通用的服务层操作，包括save方法。
+        * this关键字在Java中表示当前对象，也就是当前正在执行的方法所在的对象。
+        * 在这个上下文中，this表示的是DishServiceImpl对象。DishServiceImpl类继承了ServiceImpl类，因此，this.save(dishDto);也是调用了ServiceImpl类的save方法。
+        * 总的来说，dishService.save(dishDto);和this.save(dishDto);都是将DishDto对象保存到数据库中。
+        * 它们的效果是一样的，只是调用方法的对象不同。
+        * */
+
         //拿ID和口味List，为存DishDto做准备
         Long dishId = dishDto.getId();
-        List<DishFlavor> flavor = dishDto.getFlavors();
+        List<DishFlavor> flavors = dishDto.getFlavors();
         //遍历
-        for (DishFlavor dishFlavors:flavor) {
-            dishFlavors.setDishId(dishId);
+        for (DishFlavor dishFlavor:flavors) {
+            dishFlavor.setDishId(dishId);
         }
+
+//        flavor.forEach(dishFlavor -> dishFlavor.setDishId(dishId));
+
         //saveBatch是批量集合的存储
-        dishFlavorService.saveBatch(flavor);
+        dishFlavorService.saveBatch(flavors);
     }
 
     /**
@@ -75,8 +91,8 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
         //再插入
         List<DishFlavor> flavorList=dishDto.getFlavors();
         //遍历
-        for (DishFlavor dishFlavors:flavorList) {
-            dishFlavors.setDishId(dishDto.getId());
+        for (DishFlavor dishFlavor:flavorList) {
+            dishFlavor.setDishId(dishDto.getId());
         }
         //saveBatch是批量集合的存储
         dishFlavorService.saveBatch(flavorList);
@@ -95,7 +111,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
         //先把普通信息查出来
         Dish dish = this.getById(id);
         DishDto dishDto = new DishDto();
-        //搬运
+        //搬运 从dish到dishDto
         BeanUtils.copyProperties(dish, dishDto);
         //在通过dish的分类信息查口味List
         LambdaQueryWrapper<DishFlavor> lambdaQueryWrapper = new LambdaQueryWrapper();

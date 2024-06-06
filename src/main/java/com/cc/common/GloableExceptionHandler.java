@@ -42,9 +42,35 @@ public class GloableExceptionHandler {
             String errorMessage = "这个账号重复了" + splitErrorMessage[2];
             return Result.error(errorMessage);
         }
-        //返回位置错误
+        //检查是否违反了其他常见的完整性约束
+        else if (exception.getMessage().contains("Cannot delete or update a parent row")) {
+            return Result.error("违反了外键约束");
+        }
+        else if (exception.getMessage().contains("Data too long for column")) {
+            return Result.error("数据太长，超过了列的长度约束");
+        }
+        //返回未知错误
         return Result.error("未知错误");
     }
+    /*@ExceptionHandler({SQLIntegrityConstraintViolationException.class,NullPointerException.class})
+    public Result<String> exceptionHandler(SQLIntegrityConstraintViolationException exception){
+        //打印异常信息
+        log.error(exception.getMessage());
+        //判断异常信息是否包含重复信息 Duplicate entry
+        if (exception.getMessage().contains("Duplicate entry")){
+            //exception对象分割，同时存储
+            String []splitErrorMessage=exception.getMessage().split(" ");
+            *//**
+             * splitErrorMessage数组内存的信息
+             * Duplicate entry '新增的账号' for key 'idx_username'
+             * 下标位2是新增账号，下标位5是关联的字段名
+             *//*
+            String errorMessage = "这个账号重复了" + splitErrorMessage[2];
+            return Result.error(errorMessage);
+        }
+        //返回位置错误
+        return Result.error("未知错误");
+    }*/
 
     /**
      * 自定义的全局异常处理

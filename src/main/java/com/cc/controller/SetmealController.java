@@ -86,6 +86,17 @@ public class SetmealController {
         SetmealDto setmealDto=setmealService.getSetmealData(id);
         return Result.success(setmealDto);
     }
+    /*
+    * 更新套餐操作 传入的是套餐Dto对象
+    * @param setmealDto
+    * @return 返回成功信息
+    * */
+    @PutMapping()
+    public Result<String> updateSetmeal(@RequestBody SetmealDto setmealDto){
+        log.info("更新套餐{}",setmealDto);
+        setmealService.updateWithDish(setmealDto);
+        return Result.success("套餐更新成功");
+    }
 
     /**
      * 删除套餐操作

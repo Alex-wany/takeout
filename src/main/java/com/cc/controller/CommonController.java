@@ -32,9 +32,9 @@ public class CommonController {
      * @return
      */
     @PostMapping("/upload")
-    public Result<String> upLoadFile(MultipartFile file){
-        //这里的file只是一个临时的文件存储，临时存储到某一个位置，然后待接收完毕后再转存到目标位置上，然后再把这个临时文件删除
-        //截取文件后缀
+    public Result<String> upLoadFile(MultipartFile file){ //这里的file是前台传来的文件 文件名字和前台传来的文件名字是一致的 不能随便写
+        //这里的file只是一个临时文件 不能直接用，需要转存到指定位置 临时文件会自动删除
+        //截取文件后缀 .jpg .png .jpeg
         String suffix = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf('.'));
         //生成UUID
         String randomUUID = UUID.randomUUID().toString();
@@ -73,7 +73,7 @@ public class CommonController {
         //把读取到内存中的图片用输出流写入Servlet响应对象里
         ServletOutputStream servletOutputStream = httpServletResponse.getOutputStream();
 
-        //可选项，选择响应类型
+        //可选项，选择响应类型 通常是 image/jpeg image/png image/gif
         httpServletResponse.setContentType("image/jpeg");
 
         //用byte数组写入，注意是小写b，不是大写，大写就是包装类了

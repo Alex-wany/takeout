@@ -35,7 +35,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     public void removeCategory(Long id) {
         //查询当前菜品分类下是否还有菜品，如果有菜品就不能删除，抛出异常打断
         LambdaQueryWrapper<Dish> dishLambdaQueryWarpper = new LambdaQueryWrapper();
-        //看看所有的菜品下有没有目标分类与之关联
+        //查询当前菜品分类下是否还有菜品 通过菜品分类id查询
         dishLambdaQueryWarpper.eq(Dish::getCategoryId, id);
         int countInDishById=dishService.count(dishLambdaQueryWarpper);
         if (countInDishById>0){

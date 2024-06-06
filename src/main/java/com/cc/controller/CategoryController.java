@@ -91,14 +91,14 @@ public class CategoryController {
      * @return
      */
     @GetMapping("/list")
-    public Result<List> listShowCategory(Category category){
+    public Result<List<Category>> listShowCategory(Category category){
         //条件构造器
         LambdaQueryWrapper<Category> lambdaQueryWrapper = new LambdaQueryWrapper();
         //MP也支持把对象先判断一下，非空才能进行查询
         lambdaQueryWrapper.eq(category.getType() != null, Category::getType, category.getType());
         //lambdaQueryWrapper.eq(Category::getType, category.getType());
-        //按时间倒叙排序
-        lambdaQueryWrapper.orderByDesc(Category::getUpdateTime);
+        //按时间升序
+        lambdaQueryWrapper.orderByAsc(Category::getUpdateTime);
         //查询
         List<Category> categoryList = categoryService.list(lambdaQueryWrapper);
         return Result.success(categoryList);
